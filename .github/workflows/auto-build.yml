@@ -1,0 +1,39 @@
+name: 🛠️ 自动构建 (Auto Build)
+
+on:
+  push:
+  workflow_dispatch:
+
+concurrency:
+  group: auto-build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: 🛠️ 构建 Windows x64 (Build Windows x64)
+    # WinShun 只支持 Windows（依赖 Win32 API 与 MSVC），无法使用 ubuntu runner
+    runs-on: windows-2025
+    steps:
+      - name: 检出代码 (Checkout)
+        uses: actions/checkout@v7
+
+      - name: 安装 Qt (Install Qt)
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.12.0'
+          arch: win64_msvc2022_64
+          cache: true
+
+      - name: 运行 build 构建 (Run Build)
+        shell: pwsh
+        run: ./scripts/build.ps1 -QtDir $env:QT_ROOT_DIR -DeployDir dist\WinShun
+
+      - name: 上传构建产物 (Upload Build Artifacts)
+        uses: actions/upload-artifact@v7
+        with:
+          name: WinShun-x64
+          path: dist/WinShun
+          if-no-files-found: error
